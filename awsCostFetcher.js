@@ -1,9 +1,21 @@
 const { CostExplorerClient, GetCostAndUsageCommand } = require('@aws-sdk/client-cost-explorer');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
-const client = new CostExplorerClient({ region: process.env.AWS_REGION });
+
 
 const fetchCost = async (service, startDate, endDate, granularity) => {
+    const CONFIG_DIR = path.join(os.homedir(), '.aws-cost-analyzer-cli');
+    const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 
+    let config = {};
+    if (fs.existsSync(CONFIG_FILE)) {
+        const raw = fs.readFileSync(CONFIG_FILE);
+        config = JSON.parse(raw);
+    }
+    const client = new CostExplorerClient({ region: config.AWS_REGION });
+    
     console.log(typeof (granularity))
     let g = granularity
     // g = granularity.trim().toUpperCase();

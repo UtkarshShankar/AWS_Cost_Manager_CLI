@@ -8,6 +8,9 @@
     "start": "node index.js",
     "dev": "nodemon index.js"
   },
+  "bin": {
+    "cost": "./index.js"
+  },
   "keywords": [
     "AWS",
     "LLM",
@@ -19,7 +22,9 @@
   "dependencies": {
     "@aws-sdk/client-cost-explorer": "^3.848.0",
     "axios": "^1.10.0",
+    "commander": "^14.0.0",
     "dotenv": "^17.2.0",
+    "inquirer": "^8.2.6",
     "openai": "^5.10.1"
   },
   "devDependencies": {

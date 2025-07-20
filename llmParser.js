@@ -1,38 +1,11 @@
-// import OpenAI from "openai";
-// import dotenv from "dotenv";
-// dotenv.config();
-
-// const openai = new OpenAI();
-
-// export async function parseQuery(query) {
-//     const prompt = `
-// Convert the following user query into JSON with keys: service, start_date, end_date.
-// Query: "${query}"
-// Return only valid JSON.
-//   `;
-
-//     const response = await openai.chat.completions.create({
-//         model: "gpt-3.5-turbo",
-//         messages: [{ role: "user", content: prompt }],
-//     });
-
-//     return JSON.parse(response.choices[0].message.content);
-// }
-
-// import OpenAI from 'openai';
 const OpenAI = require('openai');
-const client = new OpenAI({
-    apiKey: process.env.PERPLEXITY_API_KEY,
-    baseURL: "https://api.perplexity.ai"
-});
 
 
-const parseQuery = async (userQuery) => {
-    // const prompt = `
-    // Convert the following user query into JSON with keys: service, start_date, end_date.
-    // Query: "${userQuery}"
-    // Return only valid JSON.
-    //   `;
+const parseQuery = async (userQuery, PERPLEXITY_API_KEY) => {
+    const client = new OpenAI({
+        apiKey: PERPLEXITY_API_KEY,
+        baseURL: "https://api.perplexity.ai"
+    });
 
     const prompt = `You are a strict API parser that converts user cost queries into structured JSON for an AWS Cost Analyzer CLI tool.
 
@@ -106,10 +79,12 @@ Now convert this query:
 
         parsedRes = JSON.parse(response.choices[0].message.content);
         console.log('Json res:' + JSON.stringify(parsedRes));
+
         const g = parsedRes.granularity.trim().toUpperCase();
         const allowedGranularity = ["DAILY", "MONTHLY", "HOURLY"];
+
         if (!allowedGranularity.includes(g)) {
-            console.log('gra value: '+g);
+            console.log('gra value: ' + g);
             throw new Error(`Invalid granularity value from LLM: ${g}`);
         }
 
@@ -123,8 +98,6 @@ Now convert this query:
         end_date: parsedRes.end_date,
         granularity: parsedRes.granularity
     }
-    // console.log(response.choices[0].message.content);
-    // console.log(`Citations: ${response.citations}`);
 }
 
 module.exports = parseQuery;
