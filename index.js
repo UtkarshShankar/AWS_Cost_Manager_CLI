@@ -72,6 +72,21 @@ async function promptForRegion() {
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
   console.log('✅ Default AWS region updated.');
 }
+async function printReadableCost(costData, service, granularity) {
+  const result = costData.ResultsByTime[0];
+
+  console.log(`\n🧾 AWS Cost Summary\n`);
+
+  console.log(`Service: ${service}`);
+  console.log(`Time Period: ${result.TimePeriod.Start} to ${result.TimePeriod.End}`);
+  console.log(`Granularity: ${granularity}`);
+  console.log(`Estimated: ${result.Estimated ? 'Yes' : 'No'}`);
+
+  const totalCost = result.Total.UnblendedCost.Amount;
+  const unit = result.Total.UnblendedCost.Unit;
+
+  console.log(`Total Cost: $${parseFloat(totalCost).toFixed(2)} ${unit}\n`);
+}
 async function main(query) {
   try {
     await ensurePerplexityKey();
@@ -91,7 +106,8 @@ async function main(query) {
     );
 
     console.log("🧾 AWS Cost Summary");
-    console.log(JSON.stringify(costData, null, 2));
+    // console.log(JSON.stringify(costData, null, 2));
+    printReadableCost(costData, parsed.service, parsed.granularity);
   } catch (error) {
     console.error("❌ Error:", error.message);
   }

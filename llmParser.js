@@ -64,7 +64,7 @@ Now convert this query:
         });
 
         parsedRes = JSON.parse(response.choices[0].message.content);
-        console.log('Json res:' + JSON.stringify(parsedRes));
+        // console.log('Json res:' + JSON.stringify(parsedRes));
 
         const g = parsedRes.granularity.trim().toUpperCase();
         const allowedGranularity = ["DAILY", "MONTHLY", "HOURLY"];
