@@ -16,7 +16,7 @@ const fetchCost = async (service, startDate, endDate, granularity) => {
     }
     const client = new CostExplorerClient({ region: config.AWS_REGION });
     
-    console.log(typeof (granularity))
+    // console.log(typeof (granularity))
     let g = granularity
     // g = granularity.trim().toUpperCase();
     const allowedGranularity = ["DAILY", "MONTHLY", "HOURLY"];

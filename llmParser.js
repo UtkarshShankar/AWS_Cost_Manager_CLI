@@ -63,20 +63,6 @@ Now convert this query:
             return_citations: true
         });
 
-        // const response = {
-        //     choices: [{
-        //         message: {
-        //             content: {
-        //                 "service": "Amazon Elastic Compute Cloud",
-        //                 "start_date": "2025-07-01",
-        //                 "end_date": "2025-07-19",
-        //                 "granularity": "MONTHLY"
-        //             }
-        //         }
-        //     }]
-        // }
-
-
         parsedRes = JSON.parse(response.choices[0].message.content);
         console.log('Json res:' + JSON.stringify(parsedRes));
 
@@ -84,14 +70,14 @@ Now convert this query:
         const allowedGranularity = ["DAILY", "MONTHLY", "HOURLY"];
 
         if (!allowedGranularity.includes(g)) {
-            console.log('gra value: ' + g);
+            // console.log('gra value: ' + g);
             throw new Error(`Invalid granularity value from LLM: ${g}`);
         }
 
     } catch (error) {
         console.error('Error Occured: ' + error);
     }
-    console.log(parsedRes.granularity);
+    // console.log(parsedRes.granularity);
     return {
         service: parsedRes.service,
         start_date: parsedRes.start_date,

@@ -5,6 +5,7 @@ const inquirer = require('inquirer');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const crypto = require('crypto');
 
 const fetchCost = require('./awsCostFetcher.js');
 const parseQuery = require('./llmParser.js');
