@@ -1,6 +1,6 @@
 # 🚀 AWS Cost Analyzer CLI with Natural Language Processing
 
-&#x20;
+![Node.js](https://img.shields.io/badge/Node.js-18.x-green) ![License](https://img.shields.io/badge/license-MIT-blue)
 
 ---
 
@@ -17,19 +17,21 @@ It leverages:
 
 ## ✨ Key Features
 
-✅ Query AWS cost data using plain English\
-✅ Supports **daily, monthly, or hourly granularity**\
-✅ Filters costs by specific AWS services or across all services\
-✅ Outputs clean, readable summaries in your terminal\
-✅ Secure integration using environment variables\
+✅ Query AWS cost data using plain English  
+✅ Supports **daily, monthly, or hourly granularity**  
+✅ Filters costs by specific AWS services or across all services  
+✅ Outputs clean, readable summaries in your terminal  
+✅ Automatic prompt to set AWS region and API key if missing  
+✅ CLI options including `--edit-api-key`, `--help`, and `--version`  
+✅ Secure config stored in `~/.aws-cost-analyzer-cli/config.json`  
 ✅ Modular, extensible, and ready for CI/CD integration
 
 ---
 
 ## 💡 Example Use Cases
 
-🔹 “What was my EC2 cost last week?”\
-🔹 “Show my monthly S3 spend for June 2025.”\
+🔹 “What was my EC2 cost last week?”  
+🔹 “Show my monthly S3 spend for June 2025.”  
 🔹 “How much did I spend on Lambda yesterday?”
 
 ---
@@ -40,6 +42,7 @@ It leverages:
 git clone https://github.com/UtkarshShankar/AWS_Cost_Manager_CLI.git
 cd aws-cost-analyzer-cli
 npm install
+npm install -g . # (for global CLI access as `cost`)
 ```
 
 ---
@@ -49,31 +52,38 @@ npm install
 1. **AWS Account** with Cost Explorer enabled
 2. **IAM user** with `AWSBillingReadOnlyAccess` permissions
 3. **AWS credentials** configured via environment variables or AWS CLI
-4. **OpenAI or Perplexity API Key** for natural language parsing
+4. **Perplexity API Key** (or OpenAI key if modified)
 5. **Node.js v18.x or above**
+
+> ⚠️ **Security Tip:** Your config file stores the API key in plain text. Ensure it is not shared or committed.
 
 ---
 
 ## ⚙️ Configuration
 
-Create a `.env` file in the project root:
-
-```env
-AWS_ACCESS_KEY_ID=your_aws_access_key
-AWS_SECRET_ACCESS_KEY=your_aws_secret_key
-AWS_REGION=us-east-1
-
-OPENAI_API_KEY=your_openai_api_key
-```
+On the first run, the CLI will prompt for your **Perplexity API Key** and **AWS region**. These are securely stored in:  
+`~/.aws-cost-analyzer-cli/config.json`
 
 ---
 
 ## 🚀 Usage
 
-Run the CLI with your query:
+Run the CLI with a natural language query:
 
 ```bash
-node index.js "What was my EC2 cost last week?"
+cost "What was my EC2 cost last week?"
+```
+
+Edit your saved API key:
+
+```bash
+cost --edit-api-key
+```
+
+Show help and usage:
+
+```bash
+cost --help
 ```
 
 ### 📤 Sample Output
@@ -81,9 +91,10 @@ node index.js "What was my EC2 cost last week?"
 ```
 🧾 AWS Cost Summary
 Service: Amazon Elastic Compute Cloud
-Time Period: 2025-07-08 to 2025-07-15
-Granularity: DAILY
-Total Cost: $23.54
+Time Period: 2025-07-01 to 2025-07-22
+Granularity: MONTHLY
+Estimated: Yes
+Total Cost: $0.00 USD
 ```
 
 ---
@@ -92,8 +103,20 @@ Total Cost: $23.54
 
 - **Node.js**
 - **AWS SDK v3**
-- **OpenAI or Perplexity API**
-- **dotenv** for environment management
+- **Perplexity or OpenAI API**
+- **dotenv** (legacy support) / local config
+- **Commander.js** for CLI framework
+- **Inquirer.js** for prompts
+
+---
+
+## 📚 CLI Options
+
+| Option           | Description                             |
+| ---------------- | --------------------------------------- |
+| `--edit-api-key` | Prompt to update the Perplexity API Key |
+| `--help`         | Show command usage info                 |
+| `--version`      | Display the CLI version                 |
 
 ---
 
@@ -102,13 +125,16 @@ Total Cost: $23.54
 ✅ **MVP (Current)**
 
 - Natural language parsing for AWS cost queries
-- Daily and monthly cost summaries
-- CLI interface
+- CLI prompts for config setup
+- Formatted cost summaries in terminal
 
 🔜 **Upcoming Features**
 
 - 🔧 **Alexa Skill Integration** to ask AWS cost questions via voice
-- 🤖 **Integration with Slack or Teams for daily cost reports**
+- 🤖 **Slack/Teams notifications** for daily cost summaries
+- 🧪 **Mock/demo mode** for users without billing data
+- 📁 **Export to CSV/JSON**
+- 🧠 **Query history support** for repeat usage
 
 ---
 
