@@ -21,8 +21,20 @@ if (!fs.existsSync(CONFIG_DIR)) {
 
 let config = {};
 if (fs.existsSync(CONFIG_FILE)) {
-  const raw = fs.readFileSync(CONFIG_FILE);
-  config = JSON.parse(raw);
+  const raw = fs.readFileSync(CONFIG_FILE, 'utf-8').trim();
+
+  if (raw.length === 0) {
+    console.warn("⚠️ Config file is empty. Initializing a new one.");
+    config = {};
+  } else {
+    try {
+      config = JSON.parse(raw);
+    } catch (err) {
+      console.error("❌ Config file is invalid JSON. Please fix or delete the file:");
+      console.error(CONFIG_FILE);
+      process.exit(1);
+    }
+  }
 }
 
 async function ensurePerplexityKey() {
@@ -111,6 +123,21 @@ async function getValidLLM(passedLLM) {
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
   return llm;
 }
+async function promptForLLM() {
+  
+    const answer = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'llm',
+        message: 'Please choose a valid LLM:',
+        choices: allowedLLMs,
+        default: 'perplexity'
+      }
+    ]);
+    llm = answer.llm;
+  config.lastLLM = llm; // 'gemini' or 'perplexity'
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+}
 async function promptForRegion() {
   const answers = await inquirer.prompt([
     {
@@ -170,6 +197,13 @@ async function main(query, llmProvider) {
     console.error("❌ Error:", error.message);
   }
 }
+async function verify() {
+  if (config.AWS_REGION === undefined) {
+    await promptForRegion();
+  } else if (config.lastLLM === undefined) {
+    await promptForLLM();
+  } 
+}
 
 program
   .name('cost')
@@ -180,11 +214,15 @@ program
   .arguments('[query...]')
   .action(async (query) => {
     // Check if --edit-api-key is passed
+    await verify();
     let llmProvider = config.lastLLM;
-    if(program.opts().llm){
+    if (llmProvider === undefined) {
+      llmProvider = await getValidLLM('none');
+    }
+    if (program.opts().llm) {
       llmProvider = await getValidLLM(program.opts().llm);
     }
-    
+
     if (program.opts().editApiKey) {
       await editApiKey(llmProvider);
       process.exit(0);
