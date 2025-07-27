@@ -1,4 +1,4 @@
-# 🚀 AWS Cost Analyzer CLI with Natural Language Processing
+# 🚀 AWS Cost Manager CLI with Natural Language Processing
 
 ![Node.js](https://img.shields.io/badge/Node.js-18.x-green) ![License](https://img.shields.io/badge/license-MIT-blue)
 
@@ -6,7 +6,7 @@
 
 ## 📝 Overview
 
-**AWS Cost Analyzer CLI** is a powerful command-line tool enabling developers, cloud architects, and finance teams to **analyze their AWS costs using natural language queries**.
+**AWS Cost Manager CLI** is a powerful command-line tool enabling developers, cloud architects, and finance teams to **analyze their AWS costs using natural language queries**.
 
 It leverages:
 
@@ -71,13 +71,19 @@ On the first run, the CLI will prompt for your **Perplexity API Key** and **AWS 
 Run the CLI with a natural language query:
 
 ```bash
-cost "What was my EC2 cost last week?"
+cost What was my EC2 cost last week?
 ```
 
 Edit your saved API key:
 
 ```bash
 cost --edit-api-key
+```
+
+Switch LLM :
+
+```bash
+cost --llm
 ```
 
 Show help and usage:
@@ -94,7 +100,7 @@ Service: Amazon Elastic Compute Cloud
 Time Period: 2025-07-01 to 2025-07-22
 Granularity: MONTHLY
 Estimated: Yes
-Total Cost: $0.00 USD
+Total Cost: $5.40 USD
 ```
 
 ---
@@ -103,8 +109,7 @@ Total Cost: $0.00 USD
 
 - **Node.js**
 - **AWS SDK v3**
-- **Perplexity or OpenAI API**
-- **dotenv** (legacy support) / local config
+- **Perplexity or Gemini API**
 - **Commander.js** for CLI framework
 - **Inquirer.js** for prompts
 
@@ -115,6 +120,7 @@ Total Cost: $0.00 USD
 | Option           | Description                             |
 | ---------------- | --------------------------------------- |
 | `--edit-api-key` | Prompt to update the Perplexity API Key |
+| `---llm`         | Prompt to switch LLM poviders           |
 | `--help`         | Show command usage info                 |
 | `--version`      | Display the CLI version                 |
 
@@ -130,7 +136,6 @@ Total Cost: $0.00 USD
 
 🔜 **Upcoming Features**
 
-- 🔧 **Alexa Skill Integration** to ask AWS cost questions via voice
 - 🤖 **Slack/Teams notifications** for daily cost summaries
 - 🧪 **Mock/demo mode** for users without billing data
 - 📁 **Export to CSV/JSON**

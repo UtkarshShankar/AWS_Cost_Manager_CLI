@@ -5,7 +5,6 @@ const inquirer = require('inquirer');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const crypto = require('crypto');
 
 const fetchCost = require('./awsCostFetcher.js');
 const parseQuery = require('./llmParser.js');
@@ -14,13 +13,12 @@ const program = new Command();
 
 const CONFIG_DIR = path.join(os.homedir(), '.aws-cost-analyzer-cli');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+const allowedLLMs = ['perplexity', 'gemini'];
 
-// Ensure config directory exists
 if (!fs.existsSync(CONFIG_DIR)) {
   fs.mkdirSync(CONFIG_DIR, { recursive: true });
 }
 
-// Load existing config or initialize
 let config = {};
 if (fs.existsSync(CONFIG_FILE)) {
   const raw = fs.readFileSync(CONFIG_FILE);
@@ -42,21 +40,76 @@ async function ensurePerplexityKey() {
 
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
     console.log('✅ Perplexity API key saved successfully.');
+  } else {
+    console.log('✅ Using Perplexity.');
   }
 }
-async function editApiKey() {
-  const answers = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'apiKey',
-      message: 'Enter your new Perplexity API Key:',
-      validate: input => input.trim() !== '' || 'API Key cannot be empty'
-    }
-  ]);
-  config.PERPLEXITY_API_KEY = answers.apiKey.trim();
+async function ensureGeminiKey() {
+  if (!config.GEMINI_API_KEY) {
+    const answers = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'apiKey',
+        message: 'Enter your Gemini API Key:',
+        validate: input => input.trim() !== '' || 'API Key cannot be empty'
+      }
+    ]);
 
+    config.GEMINI_API_KEY = answers.apiKey.trim();
+
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+    console.log('✅ Gemini API key saved successfully.');
+  } else {
+    console.log('✅ Using Gemini.');
+  }
+}
+async function editApiKey(llmProvider) {
+  if (llmProvider === 'perplexity') {
+    const answers = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'apiKey',
+        message: 'Enter your new Perplexity API Key:',
+        validate: input => input.trim() !== '' || 'API Key cannot be empty'
+      }
+    ]);
+    config.PERPLEXITY_API_KEY = answers.apiKey.trim();
+
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+    console.log('✅ Perplexity API key updated successfully.');
+
+  } else if (llmProvider === 'gemini') {
+    const answers = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'apiKey',
+        message: 'Enter your new Gemini API Key:',
+        validate: input => input.trim() !== '' || 'API Key cannot be empty'
+      }
+    ]);
+    config.GEMINI_API_KEY = answers.apiKey.trim();
+
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+    console.log('✅ Gemini API key updated successfully.');
+  }
+}
+async function getValidLLM(passedLLM) {
+  let llm = passedLLM?.toLowerCase();
+  if (!allowedLLMs.includes(llm)) {
+    const answer = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'llm',
+        message: 'Invalid LLM provider selected. Please choose a valid one:',
+        choices: allowedLLMs,
+        default: 'perplexity'
+      }
+    ]);
+    llm = answer.llm;
+  }
+  config.lastLLM = llm; // 'gemini' or 'perplexity'
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-  console.log('✅ Perplexity API key updated successfully.');
+  return llm;
 }
 async function promptForRegion() {
   const answers = await inquirer.prompt([
@@ -87,14 +140,21 @@ async function printReadableCost(costData, service, granularity) {
 
   console.log(`Total Cost: $${parseFloat(totalCost).toFixed(2)} ${unit}\n`);
 }
-async function main(query) {
+async function main(query, llmProvider) {
   try {
-    await ensurePerplexityKey();
+    let API_KEY;
+    if (llmProvider == 'perplexity') {
+      await ensurePerplexityKey();
+      API_KEY = config.PERPLEXITY_API_KEY;
+    } else {
+      await ensureGeminiKey();
+      API_KEY = config.GEMINI_API_KEY;
+    }
 
     console.log(`🔎 Processing query: "${query}"`);
 
     // Pass API key to parser if needed
-    const parsed = await parseQuery(query, config.PERPLEXITY_API_KEY);
+    const parsed = await parseQuery(query, API_KEY, llmProvider);
     if (!config.AWS_REGION) {
       await promptForRegion();
     }
@@ -105,8 +165,6 @@ async function main(query) {
       parsed.granularity
     );
 
-    console.log("🧾 AWS Cost Summary");
-    // console.log(JSON.stringify(costData, null, 2));
     printReadableCost(costData, parsed.service, parsed.granularity);
   } catch (error) {
     console.error("❌ Error:", error.message);
@@ -115,23 +173,41 @@ async function main(query) {
 
 program
   .name('cost')
-  .description('AWS Cost Analyzer CLI with NLP')
+  .description('AWS Cost Manager CLI with NLP')
   .version('1.0.0')
   .option('--edit-api-key', 'Edit Perplexity API Key')
+  .option('--llm <provider>', 'Specify LLM provider: perplexity or gemini')
   .arguments('[query...]')
   .action(async (query) => {
     // Check if --edit-api-key is passed
+    let llmProvider = config.lastLLM;
+    if(program.opts().llm){
+      llmProvider = await getValidLLM(program.opts().llm);
+    }
+    
     if (program.opts().editApiKey) {
-      await editApiKey();
+      await editApiKey(llmProvider);
       process.exit(0);
     }
 
-    const joinedQuery = query.join(" ");
-    await main(joinedQuery);
+    let joinedQuery = query.join(" ");
+    if (!joinedQuery.trim()) {
+      const answer = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'userQuery',
+          message: 'Enter your AWS cost query:',
+          validate: input => input.trim() !== '' || 'Query cannot be empty'
+        }
+      ]);
+      joinedQuery = answer.userQuery.trim();
+    }
+    await main(joinedQuery, llmProvider);
   });
 program.addHelpText('before', `
 Examples:
   $ cost how much did I spend on EC2 last month
   $ cost --edit-api-key
+  $ cost --llm gemini
 `);
 program.parse();

@@ -1,13 +1,14 @@
 const OpenAI = require('openai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+const parseQuery = async (userQuery, API_KEY, llmProvider) => {
 
-const parseQuery = async (userQuery, PERPLEXITY_API_KEY) => {
-    const client = new OpenAI({
-        apiKey: PERPLEXITY_API_KEY,
-        baseURL: "https://api.perplexity.ai"
-    });
+        const client = new OpenAI({
+            apiKey: API_KEY,
+            baseURL: "https://api.perplexity.ai"
+        });
 
-    const prompt = `You are a strict API parser that converts user cost queries into structured JSON for an AWS Cost Analyzer CLI tool.
+        const prompt = `You are a strict API parser that converts user cost queries into structured JSON for an AWS Cost Analyzer CLI tool.
 
 Your task:
 - Analyze the user's question about AWS costs.
@@ -42,47 +43,73 @@ Now convert this query:
 "${userQuery}"
 `;
 
-    let parsedRes;
-    try {
+        let parsedRes;
+        try {
+            if (llmProvider == 'perplexity') {
+                const response = await client.chat.completions.create({
+                    model: "sonar-pro",
+                    messages: [
+                        { role: "system", content: "Be precise and concise." },
+                        { role: "user", content: prompt }
+                    ],
+                    search_mode: "web", // tweak these parameters to control the search results
+                    temperature: 0.2,
+                    top_p: 0.9,
+                    max_tokens: 1000,
+                    presence_penalty: 0,
+                    frequency_penalty: 0,
+                    stream: false,
+                    search_domain_filter: ["wikipedia.org"],
+                    search_recency_filter: "month",
+                    return_citations: true
+                });
 
-        const response = await client.chat.completions.create({
-            model: "sonar-pro",
-            messages: [
-                { role: "system", content: "Be precise and concise." },
-                { role: "user", content: prompt }
-            ],
-            search_mode: "web", // tweak these parameters to control the search results
-            temperature: 0.2,
-            top_p: 0.9,
-            max_tokens: 1000,
-            presence_penalty: 0,
-            frequency_penalty: 0,
-            stream: false,
-            search_domain_filter: ["wikipedia.org"],
-            search_recency_filter: "month",
-            return_citations: true
-        });
+                parsedRes = JSON.parse(response.choices[0].message.content);
+                // console.log('Json res:' + JSON.stringify(parsedRes));
 
-        parsedRes = JSON.parse(response.choices[0].message.content);
-        // console.log('Json res:' + JSON.stringify(parsedRes));
+                const g = parsedRes.granularity.trim().toUpperCase();
+                const allowedGranularity = ["DAILY", "MONTHLY", "HOURLY"];
 
-        const g = parsedRes.granularity.trim().toUpperCase();
-        const allowedGranularity = ["DAILY", "MONTHLY", "HOURLY"];
+                if (!allowedGranularity.includes(g)) {
+                    // console.log('gra value: ' + g);
+                    throw new Error(`Invalid granularity value from LLM: ${g}`);
+                }
+            } else if (llmProvider == 'gemini') {
+                const genAI = new GoogleGenerativeAI(API_KEY);
+                const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-        if (!allowedGranularity.includes(g)) {
-            // console.log('gra value: ' + g);
-            throw new Error(`Invalid granularity value from LLM: ${g}`);
+                const result = await model.generateContent(prompt);
+                const text = result.response.text();
+                // console.log("Gemini result: "+ JSON.stringify(result.response.text));
+                
+                parsedRes = extenedParsing(text);
+                // console.log("extenedParsing result: "+ JSON.stringify(parsedRes));
+            } else {
+                throw new Error(`Unsupported LLM provider: ${llmProvider}`);
+            }
+
+        } catch (error) {
+            console.error('Error Occured: ' + error);
         }
 
-    } catch (error) {
-        console.error('Error Occured: ' + error);
-    }
-    // console.log(parsedRes.granularity);
-    return {
-        service: parsedRes.service,
-        start_date: parsedRes.start_date,
-        end_date: parsedRes.end_date,
-        granularity: parsedRes.granularity
+        return {
+            service: parsedRes.service,
+            start_date: parsedRes.start_date,
+            end_date: parsedRes.end_date,
+            granularity: parsedRes.granularity
+        }
+}
+
+function extenedParsing(text) {
+    const cleaned = text
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/```$/i, '')
+    .trim();
+    try{
+        return JSON.parse(cleaned);
+    }catch(error){
+        throw new Error("❌ Failed to parse JSON from LLM response:\n" + cleaned);
     }
 }
 
