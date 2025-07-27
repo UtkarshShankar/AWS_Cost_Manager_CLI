@@ -129,5 +129,9 @@ program
     const joinedQuery = query.join(" ");
     await main(joinedQuery);
   });
-
+program.addHelpText('before', `
+Examples:
+  $ cost how much did I spend on EC2 last month
+  $ cost --edit-api-key
+`);
 program.parse();

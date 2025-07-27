@@ -5,11 +5,11 @@
   "main": "index.js",
   "scripts": {
     "test": "test",
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
   },
   "bin": {
-    "cost": "./index.js"
+    "cost": "./src/index.js"
   },
   "keywords": [
     "AWS",
